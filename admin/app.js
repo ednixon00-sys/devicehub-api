@@ -4,13 +4,35 @@ function hdr() { return { 'Authorization':'Bearer ' + tok(), 'Content-Type':'app
 
 let page=1, limit=25, selected=null;
 
+/* ---------- helpers ---------- */
 function fmtDate(s){ if(!s) return '—'; const d=new Date(s); return d.toLocaleString(); }
 function statusBadge(s){
   const cls = s==='disabled' ? 'disabled' : (s==='retired' ? 'retired' : 'active');
   const dot = s==='disabled' ? 'red' : (s==='retired' ? 'amber' : 'green');
   return `<span class="badge ${cls}"><span class="dot ${dot}"></span>${s||'active'}</span>`;
 }
+function escapeHtml(s){
+  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+function renderKV(elId, rows){
+  const el = document.getElementById(elId);
+  el.innerHTML = rows.map(([k,v]) => `
+    <div class="label">${escapeHtml(k)}</div>
+    <div class="value">${v ?? '—'}</div>
+  `).join('');
+}
+function bindTabs(){
+  document.querySelectorAll('.tab').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      document.querySelectorAll('.tab').forEach(b=>b.classList.remove('active'));
+      document.querySelectorAll('.tabpane').forEach(p=>p.classList.remove('active'));
+      btn.classList.add('active');
+      document.getElementById('tab-'+btn.dataset.tab).classList.add('active');
+    });
+  });
+}
 
+/* ---------- auth / shell ---------- */
 async function ensureLogin(){
   const has = !!tok();
   document.getElementById('login').style.display = has?'none':'block';
@@ -27,6 +49,7 @@ document.getElementById('logout').onclick=()=>{
   localStorage.removeItem('ADMIN_TOKEN'); ensureLogin();
 };
 
+/* ---------- grid load ---------- */
 async function load(){
   const q = document.getElementById('q').value.trim();
   const status = document.getElementById('status').value;
@@ -51,9 +74,9 @@ async function load(){
     tr.dataset.id = it.deviceId;
     tr.innerHTML = `
       <td><code>${it.deviceId}</code></td>
-      <td>${it.hostname||'—'}</td>
-      <td>${it.username||'—'}</td>
-      <td>${[it.osName,it.osVersion].filter(Boolean).join(' ')}</td>
+      <td>${escapeHtml(it.hostname||'—')}</td>
+      <td>${escapeHtml(it.username||'—')}</td>
+      <td>${escapeHtml([it.osName,it.osVersion].filter(Boolean).join(' '))}</td>
       <td>${fmtDate(it.lastSeenAt)||fmtDate(it.updatedAt)||'—'}</td>
       <td>${statusBadge(it.status||'active')}</td>`;
     tr.onclick = ()=>{
@@ -64,44 +87,75 @@ async function load(){
     tb.appendChild(tr);
   });
 
-  // keep selection if still on page
   if(selected){
     const row = tb.querySelector(`tr[data-id="${selected}"]`);
     if(row) row.classList.add('selected');
   }
 }
 
+/* ---------- detail load ---------- */
 async function select(id){
   selected=id;
 
-  // details
   const d = await (await fetch(API+'/admin/api/devices/'+id, { headers: hdr() })).json();
   if(!d.ok) return alert(d.error||'load error');
   const x = d.device;
-  document.getElementById('dBody').innerHTML = `
-    <div><strong>Device:</strong> <code>${x.deviceId}</code></div>
-    <div class="muted">${[x.osName,x.osVersion].filter(Boolean).join(' ')} • ${x.arch||''}</div>
-    <div class="muted">Host: ${x.hostname||'—'} • User: ${x.username||'—'}</div>
-    <div class="muted">IP: ${x.ipLast||'—'} • Status: ${x.status?statusBadge(x.status):statusBadge('active')}</div>
-    <div class="muted">First: ${fmtDate(x.firstSeenAt)} • Last: ${fmtDate(x.lastSeenAt)}</div>
-  `;
+
+  // title
+  document.getElementById('devTitle').textContent =
+    x.hostname ? `${x.hostname}` : 'Details';
+
+  // overview cards
+  renderKV('ovDevice', [
+    ['Device Name', escapeHtml(x.hostname||'—')],
+    ['Device ID', `<code>${x.deviceId}</code>`],
+    ['User', escapeHtml(x.username||'—')],
+    ['Architecture', escapeHtml(x.arch||'—')],
+  ]);
+  renderKV('ovConfig', [
+    ['App Version', escapeHtml(x.appVersion||'—')],
+    ['Tauri Version', escapeHtml(x.tauriVersion||'—')],
+    ['Status', statusBadge(x.status||'active')],
+    ['First seen', fmtDate(x.firstSeenAt)],
+    ['Last online', fmtDate(x.lastSeenAt||x.updatedAt)],
+    ['IP (last)', escapeHtml(x.ipLast||'—')],
+  ]);
+  renderKV('ovOs', [
+    ['Platform', escapeHtml(x.osName||'—')],
+    ['OS Version', escapeHtml(x.osVersion||'—')],
+  ]);
+
   document.getElementById('setStatus').value = x.status || 'active';
 
-  // events
+  // events timeline
   const ev = await (await fetch(API+'/admin/api/devices/'+id+'/events?limit=50', { headers: hdr() })).json();
-  document.getElementById('events').innerHTML =
+  const evEl = document.getElementById('eventsList');
+  evEl.innerHTML =
     ev.ok && ev.events.length
-      ? ev.events.map(e=>`<div>• <span class="muted">${fmtDate(e.createdAt)}</span> <strong>${e.eventType}</strong> — <code>${JSON.stringify(e.payload)}</code></div>`).join('')
-      : '<span class="muted">No events.</span>';
+      ? ev.events.map(e=>`
+          <div class="item">
+            <div class="when">${fmtDate(e.createdAt)}</div>
+            <div class="body">
+              <span class="etype">${escapeHtml(e.eventType)}</span>
+              <code>${escapeHtml(JSON.stringify(e.payload))}</code>
+            </div>
+          </div>`).join('')
+      : '<div class="muted">No events.</div>';
 
-  // notes
+  // notes list
   const nt = await (await fetch(API+'/admin/api/devices/'+id+'/notes', { headers: hdr() })).json();
-  document.getElementById('notes').innerHTML =
+  const ntEl = document.getElementById('notesList');
+  ntEl.innerHTML =
     nt.ok && nt.notes.length
-      ? nt.notes.map(n=>`<div>• <span class="muted">${fmtDate(n.createdAt)}</span> <strong>${n.createdBy}:</strong> ${n.note}</div>`).join('')
-      : '<span class="muted">No notes.</span>';
+      ? nt.notes.map(n=>`
+          <div class="note">
+            <div class="meta">${fmtDate(n.createdAt)} • <strong>${escapeHtml(n.createdBy)}</strong></div>
+            <div>${escapeHtml(n.note)}</div>
+          </div>`).join('')
+      : '<div class="muted">No notes.</div>';
 }
 
+/* ---------- actions ---------- */
 document.getElementById('addNote').onclick = async ()=>{
   if(!selected) return alert('Select a device first');
   const note = document.getElementById('noteText').value.trim();
@@ -129,4 +183,6 @@ document.getElementById('refresh').onclick=()=>{ page=1; load(); };
 document.getElementById('prev').onclick=()=>{ if(page>1){ page--; load(); } };
 document.getElementById('next').onclick=()=>{ page++; load(); };
 
+/* init */
+bindTabs();
 ensureLogin().then(load);
