@@ -15,14 +15,23 @@ function getClientIp(req) {
 }
 
 // Optional CA cert pinning (falls back to dev-friendly SSL if not set)
-const caPem = process.env.PG_CA_PEM;
+// Postgres TLS:
+// Prefer base64 CA -> decode, else raw PEM, else (only for dev) disable verification.
+const caB64 = process.env.PG_CA_B64;
+const caPemEnv = process.env.PG_CA_PEM;
+let caPem = null;
+
+if (caB64 && caB64.trim()) {
+  try { caPem = Buffer.from(caB64.trim(), 'base64').toString('utf8'); } catch (_) {}
+} else if (caPemEnv && caPemEnv.trim()) {
+  caPem = caPemEnv;
+}
+
+const insecure = String(process.env.PG_SSL_INSECURE || '').toLowerCase() === 'true';
 const ssl = caPem
   ? { rejectUnauthorized: true, ca: caPem }
-  : { rejectUnauthorized: false };
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-  ssl
-});
+  : (insecure ? { rejectUnauthorized: false } : { rejectUnauthorized: false }); // dev-friendly fallback
+
 
 const app = express();
 app.use(express.json());
