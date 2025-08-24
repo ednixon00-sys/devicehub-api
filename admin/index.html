@@ -1,201 +1,71 @@
 <!doctype html>
 <html>
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>DeviceHub Admin</title>
-<style>
-  body { font-family: system-ui, Arial, sans-serif; margin: 0; background:#0b1020; color:#e8ecff; }
-  header { padding: 12px 16px; background:#121735; display:flex; gap:12px; align-items:center; }
-  input, select, button, textarea { background:#1a2047; color:#e8ecff; border:1px solid #2a3170; border-radius:8px; padding:8px 10px; }
-  button { cursor:pointer; }
-  .container { padding: 16px; display:grid; grid-template-columns: 3fr 2fr; gap: 16px; }
-  .card { background:#0f1533; border:1px solid #222a63; border-radius:12px; padding:12px; }
-  table { width:100%; border-collapse: collapse; }
-  th, td { border-bottom:1px solid #1f275a; padding:8px; text-align:left; font-size:14px; }
-  tr:hover { background:#111a48; }
-  .row { display:flex; gap:8px; align-items:center; }
-  .muted { color:#9ba5ff; font-size:12px; }
-  .pill { padding:2px 8px; border-radius:999px; font-size:12px; border:1px solid #2a3170; }
-  .status-active { background:#0a3a2a; border-color:#167a57; }
-  .status-disabled { background:#3a0a0a; border-color:#7a1616; }
-  .status-retired { background:#3a2e0a; border-color:#7a6516; }
-  #login { display:none; padding:24px; max-width:420px; margin:64px auto; background:#0f1533; border:1px solid #222a63; border-radius:12px; }
-</style>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>DeviceHub Admin</title>
+  <link rel="stylesheet" href="app.css" />
 </head>
 <body>
-<header>
-  <strong>DeviceHub Admin</strong>
-  <input id="q" placeholder="Search: id / host / user / OS / IP" style="flex:1" />
-  <select id="status">
-    <option value="">All</option>
-    <option value="active">Active</option>
-    <option value="disabled">Disabled</option>
-    <option value="retired">Retired</option>
-  </select>
-  <button id="refresh">Search</button>
-  <span class="muted" id="count"></span>
-  <button id="logout" style="margin-left:auto;">Logout</button>
-</header>
+  <header>
+    <strong>DeviceHub Admin</strong>
+    <input id="q" class="flex1" placeholder="Search: id / host / user / OS / IP" />
+    <select id="status">
+      <option value="">All</option>
+      <option value="active">Active</option>
+      <option value="disabled">Disabled</option>
+      <option value="retired">Retired</option>
+    </select>
+    <button id="refresh">Search</button>
+    <span class="muted" id="count"></span>
+    <button id="logout" class="ml-auto">Logout</button>
+  </header>
 
-<div id="login">
-  <h3>Admin Login</h3>
-  <p class="muted">Paste your admin token:</p>
-  <input id="token" placeholder="Bearer token" style="width:100%; margin-bottom:8px;" />
-  <button id="loginBtn">Save & Enter</button>
-</div>
+  <div id="login">
+    <h3>Admin Login</h3>
+    <p class="muted">Paste your admin token:</p>
+    <input id="token" class="w100 mb8" placeholder="Bearer token" />
+    <button id="loginBtn">Save & Enter</button>
+  </div>
 
-<div class="container" id="app" style="display:none">
-  <div class="card">
-    <h3 style="margin-top:4px;">Devices</h3>
-    <table id="grid"><thead>
-      <tr><th>Device ID</th><th>Host</th><th>User</th><th>OS</th><th>Last Seen</th><th>Status</th></tr>
-    </thead><tbody></tbody></table>
-    <div class="row" style="justify-content:space-between;margin-top:8px;">
-      <div class="muted" id="pagerInfo"></div>
-      <div class="row">
-        <button id="prev">Prev</button>
-        <button id="next">Next</button>
+  <div class="container" id="app" style="display:none">
+    <div class="card">
+      <h3 class="mt4">Devices</h3>
+      <table id="grid"><thead>
+        <tr><th>Device ID</th><th>Host</th><th>User</th><th>OS</th><th>Last Seen</th><th>Status</th></tr>
+      </thead><tbody></tbody></table>
+      <div class="row space-between mt8">
+        <div class="muted" id="pagerInfo"></div>
+        <div class="row">
+          <button id="prev">Prev</button>
+          <button id="next">Next</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="card" id="detail">
+      <h3 class="mt4">Details</h3>
+      <div id="dBody" class="muted">Select a device</div>
+      <h4>Events</h4>
+      <div id="events" class="muted">—</div>
+      <h4 class="mt12">Notes</h4>
+      <div id="notes" class="muted">—</div>
+      <div class="row mt8">
+        <input id="noteBy" class="w30" placeholder="Your name" />
+        <input id="noteText" class="flex1" placeholder="Add a note…" />
+        <button id="addNote">Add</button>
+      </div>
+      <div class="row mt8">
+        <select id="setStatus">
+          <option value="active">active</option>
+          <option value="disabled">disabled</option>
+          <option value="retired">retired</option>
+        </select>
+        <button id="applyStatus">Apply Status</button>
       </div>
     </div>
   </div>
-  <div class="card" id="detail">
-    <h3 style="margin-top:4px;">Details</h3>
-    <div id="dBody" class="muted">Select a device</div>
-    <h4>Events</h4>
-    <div id="events" class="muted">—</div>
-    <h4 style="margin-top:12px;">Notes</h4>
-    <div id="notes" class="muted">—</div>
-    <div class="row" style="margin-top:8px;">
-      <input id="noteBy" placeholder="Your name" style="width:30%;" />
-      <input id="noteText" placeholder="Add a note…" style="flex:1;" />
-      <button id="addNote">Add</button>
-    </div>
-    <div class="row" style="margin-top:8px;">
-      <select id="setStatus">
-        <option value="active">active</option>
-        <option value="disabled">disabled</option>
-        <option value="retired">retired</option>
-      </select>
-      <button id="applyStatus">Apply Status</button>
-    </div>
-  </div>
-</div>
 
-<script>
-const API = location.origin;
-function tok() { return localStorage.getItem('ADMIN_TOKEN') || ''; }
-function hdr() { return { 'Authorization':'Bearer ' + tok(), 'Content-Type':'application/json' }; }
-
-let page=1, limit=25, selected=null;
-
-function fmtDate(s){ if(!s) return '—'; const d=new Date(s); return d.toLocaleString(); }
-function statusPill(s){ const cls=s==='disabled'?'status-disabled':(s==='retired'?'status-retired':'status-active'); return '<span class="pill '+cls+'">'+s+'</span>'; }
-
-async function ensureLogin(){
-  const has = !!tok();
-  document.getElementById('login').style.display = has?'none':'block';
-  document.getElementById('app').style.display = has?'block':'none';
-}
-document.getElementById('loginBtn').onclick=()=>{
-  const v = document.getElementById('token').value.trim();
-  if(!v){ alert('Enter token'); return; }
-  localStorage.setItem('ADMIN_TOKEN', v);
-  ensureLogin().then(load);
-};
-document.getElementById('logout').onclick=()=>{
-  localStorage.removeItem('ADMIN_TOKEN'); ensureLogin();
-};
-
-async function load(){
-  const q = document.getElementById('q').value.trim();
-  const status = document.getElementById('status').value;
-  const url = new URL(API + '/admin/api/devices');
-  url.searchParams.set('page', page);
-  url.searchParams.set('limit', limit);
-  if(q) url.searchParams.set('q', q);
-  if(status) url.searchParams.set('status', status);
-
-  const r = await fetch(url, { headers: hdr() });
-  if(r.status===401){ alert('Unauthorized — set a valid ADMIN_TOKEN'); return; }
-  const json = await r.json();
-  document.getElementById('count').textContent = `Total: ${json.total}`;
-  document.getElementById('pagerInfo').textContent = `Page ${json.page} / ${Math.ceil(json.total/json.limit||1)}`;
-
-  const tb = document.querySelector('#grid tbody');
-  tb.innerHTML='';
-  json.items.forEach(it=>{
-    const tr = document.createElement('tr');
-    tr.innerHTML = `
-      <td><code>${it.deviceId}</code></td>
-      <td>${it.hostname||'—'}</td>
-      <td>${it.username||'—'}</td>
-      <td>${it.osName||''} ${it.osVersion||''}</td>
-      <td>${fmtDate(it.lastSeenAt)||fmtDate(it.updatedAt)||'—'}</td>
-      <td>${statusPill(it.status||'active')}</td>`;
-    tr.onclick = ()=> select(it.deviceId);
-    tb.appendChild(tr);
-  });
-}
-
-async function select(id){
-  selected=id;
-  // details
-  const d = await (await fetch(API+'/admin/api/devices/'+id, { headers: hdr() })).json();
-  if(!d.ok) return alert(d.error||'load error');
-  const x = d.device;
-  document.getElementById('dBody').innerHTML = `
-    <div><strong>Device:</strong> <code>${x.deviceId}</code></div>
-    <div class="muted">${x.osName||''} ${x.osVersion||''} • ${x.arch||''}</div>
-    <div class="muted">Host: ${x.hostname||'—'} • User: ${x.username||'—'}</div>
-    <div class="muted">IP: ${x.ipLast||'—'} • Status: ${x.status||'active'}</div>
-    <div class="muted">First: ${fmtDate(x.firstSeenAt)} • Last: ${fmtDate(x.lastSeenAt)}</div>
-  `;
-  document.getElementById('setStatus').value = x.status || 'active';
-
-  // events
-  const ev = await (await fetch(API+'/admin/api/devices/'+id+'/events?limit=50', { headers: hdr() })).json();
-  document.getElementById('events').innerHTML =
-    ev.ok && ev.events.length
-      ? ev.events.map(e=>`<div>• <span class="muted">${fmtDate(e.createdAt)}</span> <strong>${e.eventType}</strong> — <code>${JSON.stringify(e.payload)}</code></div>`).join('')
-      : '<span class="muted">No events.</span>';
-
-  // notes
-  const nt = await (await fetch(API+'/admin/api/devices/'+id+'/notes', { headers: hdr() })).json();
-  document.getElementById('notes').innerHTML =
-    nt.ok && nt.notes.length
-      ? nt.notes.map(n=>`<div>• <span class="muted">${fmtDate(n.createdAt)}</span> <strong>${n.createdBy}:</strong> ${n.note}</div>`).join('')
-      : '<span class="muted">No notes.</span>';
-}
-
-document.getElementById('addNote').onclick = async ()=>{
-  if(!selected) return alert('Select a device first');
-  const note = document.getElementById('noteText').value.trim();
-  const by = document.getElementById('noteBy').value.trim() || 'admin';
-  if(!note) return;
-  const r = await fetch(API+'/admin/api/devices/'+selected+'/notes', {
-    method:'POST', headers: hdr(), body: JSON.stringify({ note, createdBy: by })
-  });
-  const j = await r.json(); if(!j.ok) return alert(j.error||'error');
-  document.getElementById('noteText').value='';
-  select(selected);
-};
-
-document.getElementById('applyStatus').onclick = async ()=>{
-  if(!selected) return alert('Select a device first');
-  const status = document.getElementById('setStatus').value;
-  const r = await fetch(API+'/admin/api/devices/'+selected+'/status', {
-    method:'POST', headers: hdr(), body: JSON.stringify({ status })
-  });
-  const j = await r.json(); if(!j.ok) return alert(j.error||'error');
-  load(); select(selected);
-};
-
-document.getElementById('refresh').onclick=()=>{ page=1; load(); };
-document.getElementById('prev').onclick=()=>{ if(page>1){ page--; load(); } };
-document.getElementById('next').onclick=()=>{ page++; load(); };
-
-ensureLogin().then(load);
-</script>
+  <script src="app.js"></script>
 </body>
 </html>

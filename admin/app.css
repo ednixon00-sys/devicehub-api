@@ -1,0 +1,15 @@
+
+/* --- tiny utilities --- */
+.flex1 { flex: 1; }
+.ml-auto { margin-left: auto; }
+.w100 { width: 100%; }
+.w30 { width: 30%; }
+.mb8 { margin-bottom: 8px; }
+.mt4 { margin-top: 4px; }
+.mt8 { margin-top: 8px; }
+.mt12 { margin-top: 12px; }
+.row.space-between { justify-content: space-between; }
+
+/* default hidden; JS toggles visibility */
+#app { display:none; }
+#login { display:none; }
