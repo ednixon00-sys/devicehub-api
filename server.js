@@ -15,12 +15,10 @@ function getClientIp(req) {
 }
 
 // Optional CA cert pinning (falls back to dev-friendly SSL if not set)
-const caPath = process.env.PG_CA_CERT;
-const ssl =
-  caPath && fs.existsSync(caPath)
-    ? { rejectUnauthorized: true, ca: fs.readFileSync(caPath, 'utf8') }
-    : { rejectUnauthorized: false };
-
+const caPem = process.env.PG_CA_PEM;
+const ssl = caPem
+  ? { rejectUnauthorized: true, ca: caPem }
+  : { rejectUnauthorized: false };
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
   ssl
