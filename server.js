@@ -1,12 +1,12 @@
 require('dotenv').config();
-const fs = require('fs');
 const express = require('express');
 const helmet = require('helmet');
 const cors = require('cors');
 const morgan = require('morgan');
-const { Pool } = require('pg');
 const crypto = require('crypto');
+const { Pool } = require('pg');
 
+// ---- helpers ----
 function sha256(s) { return crypto.createHash('sha256').update(String(s)).digest('hex'); }
 function getClientIp(req) {
   const xf = req.headers['x-forwarded-for'];
@@ -14,25 +14,31 @@ function getClientIp(req) {
   return (req.socket?.remoteAddress || '').replace('::ffff:', '');
 }
 
-// Optional CA cert pinning (falls back to dev-friendly SSL if not set)
-// Postgres TLS:
-// Prefer base64 CA -> decode, else raw PEM, else (only for dev) disable verification.
+// ---- Postgres TLS config ----
+// Prefer base64-encoded CA (PG_CA_B64), else raw PEM (PG_CA_PEM),
+// else (dev-friendly) disable verification.
 const caB64 = process.env.PG_CA_B64;
 const caPemEnv = process.env.PG_CA_PEM;
 let caPem = null;
-
 if (caB64 && caB64.trim()) {
   try { caPem = Buffer.from(caB64.trim(), 'base64').toString('utf8'); } catch (_) {}
 } else if (caPemEnv && caPemEnv.trim()) {
   caPem = caPemEnv;
 }
-
+// Optional escape hatch if you really need it:
 const insecure = String(process.env.PG_SSL_INSECURE || '').toLowerCase() === 'true';
+
 const ssl = caPem
   ? { rejectUnauthorized: true, ca: caPem }
-  : (insecure ? { rejectUnauthorized: false } : { rejectUnauthorized: false }); // dev-friendly fallback
+  : (insecure ? { rejectUnauthorized: false } : { rejectUnauthorized: false }); // safe fallback for now
 
+// ---- Pool (GLOBAL, available to all routes) ----
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+  ssl
+});
 
+// ---- app setup ----
 const app = express();
 app.use(express.json());
 app.use(helmet());
@@ -41,12 +47,13 @@ app.use(morgan('tiny'));
 
 // ---- health + db ping ----
 app.get('/health', (_req, res) => res.json({ ok: true }));
+
 app.get('/db-ping', async (_req, res) => {
   try {
     const { rows } = await pool.query('SELECT 1 AS ok');
     return res.json({ ok: rows[0].ok === 1 });
   } catch (e) {
-    console.error('db-ping error:', e.message);
+    console.error('db-ping error:', e);
     return res.status(500).json({ ok: false, error: e.message });
   }
 });
