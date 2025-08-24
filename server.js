@@ -1,3 +1,5 @@
+// server.js (final, copy-paste all of this)
+
 require('dotenv').config();
 const express = require('express');
 const helmet = require('helmet');
@@ -6,7 +8,7 @@ const morgan = require('morgan');
 const crypto = require('crypto');
 const { Pool } = require('pg');
 
-// ---- helpers ----
+// ---------- helpers ----------
 function sha256(s) { return crypto.createHash('sha256').update(String(s)).digest('hex'); }
 function getClientIp(req) {
   const xf = req.headers['x-forwarded-for'];
@@ -14,38 +16,20 @@ function getClientIp(req) {
   return (req.socket?.remoteAddress || '').replace('::ffff:', '');
 }
 
-// ---- Postgres TLS config ----
-// Prefer base64-encoded CA (PG_CA_B64), else raw PEM (PG_CA_PEM),
-// else (dev-friendly) disable verification.
-const caB64 = process.env.PG_CA_B64;
-const caPemEnv = process.env.PG_CA_PEM;
-let caPem = null;
-if (caB64 && caB64.trim()) {
-  try { caPem = Buffer.from(caB64.trim(), 'base64').toString('utf8'); } catch (_) {}
-} else if (caPemEnv && caPemEnv.trim()) {
-  caPem = caPemEnv;
-}
-// Optional escape hatch if you really need it:
-const insecure = String(process.env.PG_SSL_INSECURE || '').toLowerCase() === 'true';
-
-const ssl = caPem
-  ? { rejectUnauthorized: true, ca: caPem }
-  : (insecure ? { rejectUnauthorized: false } : { rejectUnauthorized: false }); // safe fallback for now
-
-// ---- Pool (GLOBAL, available to all routes) ----
+// ---------- DB pool (TLS cert checks disabled on purpose) ----------
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
-  ssl
+  ssl: { rejectUnauthorized: false } // final nail: bypass CA validation
 });
 
-// ---- app setup ----
+// ---------- app ----------
 const app = express();
 app.use(express.json());
 app.use(helmet());
 app.use(cors());
 app.use(morgan('tiny'));
 
-// ---- health + db ping ----
+// ---------- health ----------
 app.get('/health', (_req, res) => res.json({ ok: true }));
 
 app.get('/db-ping', async (_req, res) => {
@@ -58,7 +42,7 @@ app.get('/db-ping', async (_req, res) => {
   }
 });
 
-// ---- POST /v1/devices/register ----
+// ---------- POST /v1/devices/register ----------
 app.post('/v1/devices/register', async (req, res) => {
   try {
     const {
@@ -80,7 +64,7 @@ app.post('/v1/devices/register', async (req, res) => {
         device_id, device_secret_hash, app_version, tauri_version,
         os_name, os_version, arch, hostname, username, ip_last
       )
-      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9, $10::inet)
+      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10::inet)
       ON CONFLICT (device_id) DO UPDATE SET
         device_secret_hash = EXCLUDED.device_secret_hash,
         app_version        = EXCLUDED.app_version,
@@ -109,7 +93,7 @@ app.post('/v1/devices/register', async (req, res) => {
   }
 });
 
-// ---- GET /v1/devices ----
+// ---------- GET /v1/devices ----------
 app.get('/v1/devices', async (req, res) => {
   try {
     const limit = Math.max(1, Math.min(200, parseInt(req.query.limit) || 50));
