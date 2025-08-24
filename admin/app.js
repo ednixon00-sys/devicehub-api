@@ -17,13 +17,14 @@ function escapeHtml(s){
 function renderKV(elId, rows){
   const el = document.getElementById(elId);
   el.innerHTML = rows.map(([k,v]) => `
-    <div class="label">${escapeHtml(k)}</div>
-    <div class="value">${v ?? '—'}</div>
+    <div>${escapeHtml(k)}</div>
+    <div>${v ?? '—'}</div>
   `).join('');
 }
 function bindTabs(){
   document.querySelectorAll('.tab').forEach(btn=>{
-    btn.addEventListener('click', ()=>{
+    btn.addEventListener('click', (e)=>{
+      e.preventDefault();
       document.querySelectorAll('.tab').forEach(b=>b.classList.remove('active'));
       document.querySelectorAll('.tabpane').forEach(p=>p.classList.remove('active'));
       btn.classList.add('active');
@@ -35,8 +36,12 @@ function bindTabs(){
 /* ---------- auth / shell ---------- */
 async function ensureLogin(){
   const has = !!tok();
-  document.getElementById('login').style.display = has?'none':'block';
-  document.getElementById('app').style.display   = has?'grid':'none';
+  const login  = document.getElementById('login');
+  const app    = document.getElementById('app');
+  const topbar = document.getElementById('topbar');
+  login.style.display  = has ? 'none'  : 'block';
+  app.style.display    = has ? 'block' : 'none';
+  topbar.style.display = has ? 'block' : 'none';
 }
 
 document.getElementById('loginBtn').onclick=()=>{
@@ -101,11 +106,8 @@ async function select(id){
   if(!d.ok) return alert(d.error||'load error');
   const x = d.device;
 
-  // title
-  document.getElementById('devTitle').textContent =
-    x.hostname ? `${x.hostname}` : 'Details';
+  document.getElementById('devTitle').textContent = x.hostname || 'Details';
 
-  // overview cards
   renderKV('ovDevice', [
     ['Device Name', escapeHtml(x.hostname||'—')],
     ['Device ID', `<code>${x.deviceId}</code>`],
@@ -127,7 +129,6 @@ async function select(id){
 
   document.getElementById('setStatus').value = x.status || 'active';
 
-  // events timeline
   const ev = await (await fetch(API+'/admin/api/devices/'+id+'/events?limit=50', { headers: hdr() })).json();
   const evEl = document.getElementById('eventsList');
   evEl.innerHTML =
@@ -136,13 +137,12 @@ async function select(id){
           <div class="item">
             <div class="when">${fmtDate(e.createdAt)}</div>
             <div class="body">
-              <span class="etype">${escapeHtml(e.eventType)}</span>
-              <code>${escapeHtml(JSON.stringify(e.payload))}</code>
+              <strong>${escapeHtml(e.eventType)}</strong>
+              <div><code>${escapeHtml(JSON.stringify(e.payload))}</code></div>
             </div>
           </div>`).join('')
       : '<div class="muted">No events.</div>';
 
-  // notes list
   const nt = await (await fetch(API+'/admin/api/devices/'+id+'/notes', { headers: hdr() })).json();
   const ntEl = document.getElementById('notesList');
   ntEl.innerHTML =

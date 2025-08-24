@@ -1,128 +1,137 @@
 <!doctype html>
-<html>
+<html lang="en">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>DeviceHub Admin</title>
-  <link rel="stylesheet" href="app.css" />
+  <link rel="stylesheet" href="pico.min.css" />
+  <link rel="stylesheet" href="ui.css" />
 </head>
 <body>
 
-  <!-- login screen -->
-  <div id="login">
-    <h2 style="margin:0 0 8px 0;">DeviceHub Admin</h2>
-    <p class="muted">Paste your admin token:</p>
-    <input id="token" class="w100 mb8" placeholder="Bearer token" />
-    <div class="row">
-      <button id="loginBtn" class="flex1">Save & Enter</button>
+  <!-- Login screen -->
+  <main id="login" class="container">
+    <article>
+      <header>
+        <h2>DeviceHub Admin</h2>
+        <p>Paste your admin token to continue.</p>
+      </header>
+      <input id="token" placeholder="Bearer token" />
+      <footer class="row-gap">
+        <button id="loginBtn" class="contrast">Save & Enter</button>
+      </footer>
+    </article>
+  </main>
+
+  <!-- Top bar -->
+  <nav class="container-fluid" id="topbar">
+    <ul><li><strong>DeviceHub</strong></li></ul>
+    <ul>
+      <li><input id="q" placeholder="Search: id / host / user / OS / IP" /></li>
+      <li>
+        <select id="status">
+          <option value="">All</option>
+          <option value="active">Active</option>
+          <option value="disabled">Disabled</option>
+          <option value="retired">Retired</option>
+        </select>
+      </li>
+      <li><button id="refresh">Search</button></li>
+      <li><small id="count" class="muted"></small></li>
+      <li><button id="logout" class="secondary">Logout</button></li>
+    </ul>
+  </nav>
+
+  <!-- App content -->
+  <main id="app" class="container">
+    <div class="grid">
+      <!-- Devices -->
+      <section>
+        <article>
+          <header><h3>Devices</h3></header>
+          <table id="grid">
+            <thead>
+              <tr>
+                <th>Device ID</th>
+                <th>Host</th>
+                <th>User</th>
+                <th>OS</th>
+                <th>Last Seen</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+          <footer class="row-between">
+            <small id="pagerInfo"></small>
+            <div class="row-gap">
+              <button id="prev" class="secondary">Prev</button>
+              <button id="next">Next</button>
+            </div>
+          </footer>
+        </article>
+      </section>
+
+      <!-- Detail / Tabs -->
+      <aside>
+        <article>
+          <header><h3 id="devTitle">Details</h3></header>
+
+          <nav class="tabs">
+            <ul>
+              <li><a href="#" class="tab active" data-tab="overview">More Information</a></li>
+              <li><a href="#" class="tab" data-tab="events">Recent Events</a></li>
+              <li><a href="#" class="tab" data-tab="notes">Device Notes</a></li>
+            </ul>
+          </nav>
+
+          <!-- Overview -->
+          <div class="tabpane active" id="tab-overview">
+            <div class="grid two">
+              <article class="inner">
+                <header><strong>Device Details</strong></header>
+                <div class="kv" id="ovDevice"></div>
+              </article>
+
+              <article class="inner">
+                <header><strong>Configuration Details</strong></header>
+                <div class="kv" id="ovConfig"></div>
+              </article>
+
+              <article class="inner">
+                <header><strong>OS Details</strong></header>
+                <div class="kv" id="ovOs"></div>
+              </article>
+            </div>
+
+            <div class="row-gap">
+              <select id="setStatus">
+                <option value="active">active</option>
+                <option value="disabled">disabled</option>
+                <option value="retired">retired</option>
+              </select>
+              <button id="applyStatus" class="secondary">Apply Status</button>
+            </div>
+          </div>
+
+          <!-- Events -->
+          <div class="tabpane" id="tab-events">
+            <div id="eventsList" class="timeline"></div>
+          </div>
+
+          <!-- Notes -->
+          <div class="tabpane" id="tab-notes">
+            <div id="notesList" class="timeline"></div>
+            <div class="row-gap">
+              <input id="noteBy" class="w140" placeholder="Your name" />
+              <input id="noteText" placeholder="Add a note…" />
+              <button id="addNote">Add</button>
+            </div>
+          </div>
+        </article>
+      </aside>
     </div>
-  </div>
-
-  <!-- app shell -->
-  <div id="app" class="app">
-    <aside class="sidebar">
-      <div class="brand">DeviceHub</div>
-      <nav class="nav">
-        <a class="active" href="#">Devices</a>
-      </nav>
-    </aside>
-
-    <div class="topbar">
-      <input id="q" class="flex1" placeholder="Search: id / host / user / OS / IP" />
-      <select id="status">
-        <option value="">All</option>
-        <option value="active">Active</option>
-        <option value="disabled">Disabled</option>
-        <option value="retired">Retired</option>
-      </select>
-      <button id="refresh">Search</button>
-      <span class="muted" id="count"></span>
-      <button id="logout" class="ml-auto secondary">Logout</button>
-    </div>
-
-    <main class="main">
-      <div class="card">
-        <h3>Devices</h3>
-        <table id="grid">
-          <thead>
-            <tr>
-              <th>Device ID</th>
-              <th>Host</th>
-              <th>User</th>
-              <th>OS</th>
-              <th>Last Seen</th>
-              <th>Status</th>
-            </tr>
-          </thead>
-          <tbody></tbody>
-        </table>
-        <div class="row space-between mt8">
-          <div class="muted" id="pagerInfo"></div>
-          <div class="row">
-            <button id="prev" class="secondary">Prev</button>
-            <button id="next">Next</button>
-          </div>
-        </div>
-      </div>
-    </main>
-
-    <!-- DETAIL PANE with tabs -->
-    <aside class="detail">
-      <div class="card">
-        <h3 id="devTitle">Details</h3>
-
-        <div class="tabs">
-          <button class="tab active" data-tab="overview">More Information</button>
-          <button class="tab" data-tab="events">Recent Events</button>
-          <button class="tab" data-tab="notes">Device Notes</button>
-        </div>
-
-        <!-- Overview -->
-        <div class="tabpane active" id="tab-overview">
-          <div class="grid-2">
-            <div class="card inner">
-              <h4>Device Details</h4>
-              <div class="kv" id="ovDevice"></div>
-            </div>
-
-            <div class="card inner">
-              <h4>Configuration Details</h4>
-              <div class="kv" id="ovConfig"></div>
-            </div>
-
-            <div class="card inner">
-              <h4>OS Details</h4>
-              <div class="kv" id="ovOs"></div>
-            </div>
-          </div>
-
-          <div class="row mt12">
-            <select id="setStatus">
-              <option value="active">active</option>
-              <option value="disabled">disabled</option>
-              <option value="retired">retired</option>
-            </select>
-            <button id="applyStatus" class="secondary">Apply Status</button>
-          </div>
-        </div>
-
-        <!-- Events -->
-        <div class="tabpane" id="tab-events">
-          <div id="eventsList" class="timeline"></div>
-        </div>
-
-        <!-- Notes -->
-        <div class="tabpane" id="tab-notes">
-          <div id="notesList" class="timeline"></div>
-          <div class="row mt8">
-            <input id="noteBy" class="w140" placeholder="Your name" />
-            <input id="noteText" class="flex1" placeholder="Add a note…" />
-            <button id="addNote">Add</button>
-          </div>
-        </div>
-      </div>
-    </aside>
-  </div>
+  </main>
 
   <script src="app.js"></script>
 </body>
