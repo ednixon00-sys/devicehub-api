@@ -1,15 +1,102 @@
+:root{
+  --bg:#f6f8fb;
+  --panel:#ffffff;
+  --text:#0f172a;
+  --muted:#64748b;
+  --line:#e2e8f0;
+  --brand:#2563eb;
+  --brand-600:#1d4ed8;
+  --green:#10b981;
+  --red:#ef4444;
+  --amber:#f59e0b;
+}
 
-/* --- tiny utilities --- */
-.flex1 { flex: 1; }
-.ml-auto { margin-left: auto; }
-.w100 { width: 100%; }
-.w30 { width: 30%; }
-.mb8 { margin-bottom: 8px; }
-.mt4 { margin-top: 4px; }
-.mt8 { margin-top: 8px; }
-.mt12 { margin-top: 12px; }
-.row.space-between { justify-content: space-between; }
+*{box-sizing:border-box}
+html,body{height:100%}
+body{
+  margin:0;
+  font:14px/1.45 system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial;
+  color:var(--text);
+  background:var(--bg);
+}
 
-/* default hidden; JS toggles visibility */
-#app { display:none; }
-#login { display:none; }
+/* ---------- layout ---------- */
+.app{
+  display:grid;
+  grid-template-columns: 220px 1fr 380px;
+  grid-template-rows: 56px 1fr;
+  grid-template-areas:
+    "side top top"
+    "side main detail";
+  height:100vh;
+}
+.topbar{
+  grid-area:top;
+  display:flex; align-items:center; gap:10px;
+  padding:10px 16px; background:var(--panel); border-bottom:1px solid var(--line);
+}
+.sidebar{
+  grid-area:side;
+  background:var(--panel);
+  border-right:1px solid var(--line);
+  padding:14px;
+}
+.main{ grid-area:main; padding:16px; overflow:auto; }
+.detail{ grid-area:detail; padding:16px; border-left:1px solid var(--line); background:var(--panel); overflow:auto; }
+
+.brand{font-weight:700; font-size:16px; margin-bottom:12px}
+.nav a{display:flex; align-items:center; gap:10px; padding:8px 10px; border-radius:8px; color:var(--text); text-decoration:none}
+.nav a.active, .nav a:hover{background:#eef2ff; color:var(--brand)}
+
+/* ---------- controls ---------- */
+input, select, button, textarea{
+  background:#fff; color:var(--text);
+  border:1px solid var(--line); border-radius:8px; padding:8px 10px;
+}
+button{cursor:pointer; background:var(--brand); border-color:var(--brand); color:#fff}
+button:disabled{opacity:.6; cursor:not-allowed}
+button.secondary{background:#fff; color:var(--text)}
+button.ghost{background:transparent; border:none; color:var(--muted)}
+
+.flex1{flex:1}
+.w100{width:100%}
+.row{display:flex; gap:8px; align-items:center}
+.space-between{justify-content:space-between}
+.ml-auto{margin-left:auto}
+.mt8{margin-top:8px}
+.mt12{margin-top:12px}
+.mb8{margin-bottom:8px}
+
+/* ---------- cards & table ---------- */
+.card{background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:12px}
+h3{margin:6px 0 10px 0}
+table{width:100%; border-collapse:collapse; background:var(--panel); border-radius:10px; overflow:hidden}
+th,td{padding:10px 12px; border-bottom:1px solid var(--line); text-align:left}
+th{font-weight:600; color:var(--muted); background:#fafafa}
+tr:hover td{background:#fafafa}
+
+/* ---------- status & dots ---------- */
+.badge{display:inline-flex; align-items:center; gap:6px; padding:3px 8px; border-radius:999px; border:1px solid var(--line); font-size:12px}
+.dot{width:8px; height:8px; border-radius:50%}
+.dot.green{background:var(--green)}
+.dot.red{background:var(--red)}
+.dot.amber{background:var(--amber)}
+.badge.active{background:#ecfdf5; border-color:#a7f3d0}
+.badge.disabled{background:#fee2e2; border-color:#fecaca}
+.badge.retired{background:#fffbeb; border-color:#fde68a}
+
+/* ---------- login panel ---------- */
+#login{
+  max-width:420px; margin:80px auto; background:var(--panel);
+  border:1px solid var(--line); border-radius:12px; padding:20px;
+}
+#app{display:none} #login{display:none}
+
+/* responsive: collapse detail on small screens */
+@media (max-width: 1100px){
+  .app{grid-template-columns: 200px 1fr; grid-template-areas:
+    "side top"
+    "side main";
+  }
+  .detail{display:none}
+}

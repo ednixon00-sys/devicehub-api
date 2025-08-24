@@ -5,15 +5,16 @@ function hdr() { return { 'Authorization':'Bearer ' + tok(), 'Content-Type':'app
 let page=1, limit=25, selected=null;
 
 function fmtDate(s){ if(!s) return '—'; const d=new Date(s); return d.toLocaleString(); }
-function statusPill(s){
-  const cls = s==='disabled' ? 'status-disabled' : (s==='retired' ? 'status-retired' : 'status-active');
-  return '<span class="pill '+cls+'">'+s+'</span>';
+function statusBadge(s){
+  const cls = s==='disabled' ? 'disabled' : (s==='retired' ? 'retired' : 'active');
+  const dot = s==='disabled' ? 'red' : (s==='retired' ? 'amber' : 'green');
+  return `<span class="badge ${cls}"><span class="dot ${dot}"></span>${s||'active'}</span>`;
 }
 
 async function ensureLogin(){
   const has = !!tok();
   document.getElementById('login').style.display = has?'none':'block';
-  document.getElementById('app').style.display   = has?'block':'none';
+  document.getElementById('app').style.display   = has?'grid':'none';
 }
 
 document.getElementById('loginBtn').onclick=()=>{
@@ -38,36 +39,50 @@ async function load(){
   const r = await fetch(url, { headers: hdr() });
   if(r.status===401){ alert('Unauthorized — set a valid ADMIN_TOKEN'); return; }
   const json = await r.json();
+
   document.getElementById('count').textContent = `Total: ${json.total}`;
-  document.getElementById('pagerInfo').textContent = `Page ${json.page} / ${Math.ceil(json.total/json.limit||1)}`;
+  document.getElementById('pagerInfo').textContent = `Page ${json.page} / ${Math.ceil((json.total||0)/json.limit||1)}`;
 
   const tb = document.querySelector('#grid tbody');
   tb.innerHTML='';
   json.items.forEach(it=>{
     const tr = document.createElement('tr');
+    tr.className = 'clickable';
+    tr.dataset.id = it.deviceId;
     tr.innerHTML = `
       <td><code>${it.deviceId}</code></td>
       <td>${it.hostname||'—'}</td>
       <td>${it.username||'—'}</td>
-      <td>${it.osName||''} ${it.osVersion||''}</td>
+      <td>${[it.osName,it.osVersion].filter(Boolean).join(' ')}</td>
       <td>${fmtDate(it.lastSeenAt)||fmtDate(it.updatedAt)||'—'}</td>
-      <td>${statusPill(it.status||'active')}</td>`;
-    tr.onclick = ()=> select(it.deviceId);
+      <td>${statusBadge(it.status||'active')}</td>`;
+    tr.onclick = ()=>{
+      document.querySelectorAll('#grid tbody tr.selected').forEach(x=>x.classList.remove('selected'));
+      tr.classList.add('selected');
+      select(it.deviceId);
+    };
     tb.appendChild(tr);
   });
+
+  // keep selection if still on page
+  if(selected){
+    const row = tb.querySelector(`tr[data-id="${selected}"]`);
+    if(row) row.classList.add('selected');
+  }
 }
 
 async function select(id){
   selected=id;
+
   // details
   const d = await (await fetch(API+'/admin/api/devices/'+id, { headers: hdr() })).json();
   if(!d.ok) return alert(d.error||'load error');
   const x = d.device;
   document.getElementById('dBody').innerHTML = `
     <div><strong>Device:</strong> <code>${x.deviceId}</code></div>
-    <div class="muted">${x.osName||''} ${x.osVersion||''} • ${x.arch||''}</div>
+    <div class="muted">${[x.osName,x.osVersion].filter(Boolean).join(' ')} • ${x.arch||''}</div>
     <div class="muted">Host: ${x.hostname||'—'} • User: ${x.username||'—'}</div>
-    <div class="muted">IP: ${x.ipLast||'—'} • Status: ${x.status||'active'}</div>
+    <div class="muted">IP: ${x.ipLast||'—'} • Status: ${x.status?statusBadge(x.status):statusBadge('active')}</div>
     <div class="muted">First: ${fmtDate(x.firstSeenAt)} • Last: ${fmtDate(x.lastSeenAt)}</div>
   `;
   document.getElementById('setStatus').value = x.status || 'active';
