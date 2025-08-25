@@ -100,3 +100,32 @@ tr:hover td{background:#fafafa}
   }
   .detail{display:none}
 }
+
+/* ====== detail tabs ====== */
+.tabs{display:flex; gap:6px; border-bottom:1px solid var(--line); margin:8px 0 12px 0}
+.tab{background:#fff; color:var(--text); border:1px solid var(--line); border-bottom:none; padding:8px 12px; border-top-left-radius:8px; border-top-right-radius:8px}
+.tab.active{background:#eef2ff; border-color:#c7d2fe; color:var(--brand)}
+.tabpane{display:none}
+.tabpane.active{display:block}
+
+/* ====== inner cards in detail ====== */
+.card.inner{padding:0; overflow:hidden}
+.card.inner h4{margin:0; padding:10px 12px; border-bottom:1px solid var(--line); background:#fafafa}
+.kv{display:grid; grid-template-columns: 180px 1fr}
+.kv > div{padding:10px 12px; border-bottom:1px solid var(--line)}
+.kv .label{color:var(--muted); background:#fbfdff}
+.kv .value code{font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size:12px}
+
+/* two-column info grid */
+.grid-2{display:grid; grid-template-columns: 1fr 1fr; gap:12px}
+@media (max-width:1100px){ .grid-2{grid-template-columns:1fr} }
+
+/* ====== timeline for events ====== */
+.timeline{display:flex; flex-direction:column; gap:8px}
+.timeline .item{display:flex; gap:12px; align-items:flex-start; background:#fff; border:1px solid var(--line); border-radius:10px; padding:10px 12px}
+.timeline .when{color:var(--muted); width:160px; flex:0 0 160px}
+.timeline .etype{font-weight:600; margin-right:8px}
+
+/* ====== notes ====== */
+.note{background:#fff; border:1px solid var(--line); border-radius:10px; padding:10px 12px}
+.note .meta{color:var(--muted); margin-bottom:4px}
