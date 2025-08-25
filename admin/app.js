@@ -32,6 +32,7 @@ function bindTabs(){
     });
   });
 }
+function toast(msg){ alert(msg); } // simple for now
 
 /* ---------- auth / shell ---------- */
 async function ensureLogin(){
@@ -129,6 +130,10 @@ async function select(id){
 
   document.getElementById('setStatus').value = x.status || 'active';
 
+  // enable kiosk buttons when a device is selected
+  document.getElementById('btnOpenKiosk').disabled = false;
+  document.getElementById('btnCloseKiosk').disabled = false;
+
   const ev = await (await fetch(API+'/admin/api/devices/'+id+'/events?limit=50', { headers: hdr() })).json();
   const evEl = document.getElementById('eventsList');
   evEl.innerHTML =
@@ -179,6 +184,32 @@ document.getElementById('applyStatus').onclick = async ()=>{
   load(); select(selected);
 };
 
+// ---- NEW: enqueue command helpers ----
+async function enqueueCommand(kind, payload) {
+  if(!selected) { alert('Select a device first'); return; }
+  const r = await fetch(API + '/admin/api/devices/' + encodeURIComponent(selected) + '/commands', {
+    method:'POST',
+    headers: hdr(),
+    body: JSON.stringify({ kind, payload })
+  });
+  const j = await r.json();
+  if(!j.ok){ alert(j.error||'enqueue failed'); return; }
+  toast('Command queued');
+}
+
+document.getElementById('btnOpenKiosk').onclick = async ()=>{
+  if(!selected) return alert('Select a device first');
+  const url = document.getElementById('kioskUrl').value.trim();
+  const fullscreen = document.getElementById('kioskFullscreen').checked;
+  if(!url){ alert('Enter a URL'); return; }
+  enqueueCommand('open_url', { url, fullscreen });
+};
+
+document.getElementById('btnCloseKiosk').onclick = async ()=>{
+  if(!selected) return alert('Select a device first');
+  enqueueCommand('close_kiosk', {});
+};
+
 document.getElementById('refresh').onclick=()=>{ page=1; load(); };
 document.getElementById('prev').onclick=()=>{ if(page>1){ page--; load(); } };
 document.getElementById('next').onclick=()=>{ page++; load(); };
@@ -186,3 +217,7 @@ document.getElementById('next').onclick=()=>{ page++; load(); };
 /* init */
 bindTabs();
 ensureLogin().then(load);
+
+// on first load, disable kiosk buttons until a device is selected
+document.getElementById('btnOpenKiosk').disabled = true;
+document.getElementById('btnCloseKiosk').disabled = true;

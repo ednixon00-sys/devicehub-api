@@ -104,7 +104,7 @@
               </article>
             </div>
 
-            <div class="row-gap">
+            <div class="row-gap" style="margin-top: .75rem;">
               <select id="setStatus">
                 <option value="active">active</option>
                 <option value="disabled">disabled</option>
@@ -112,6 +112,22 @@
               </select>
               <button id="applyStatus" class="secondary">Apply Status</button>
             </div>
+
+            <!-- NEW: Kiosk Controls -->
+            <article class="inner" style="margin-top: .75rem;">
+              <header><strong>Kiosk Controls</strong></header>
+              <div style="padding: .75rem 1rem; display: grid; grid-template-columns: 1fr auto auto; gap: .5rem; align-items: center;">
+                <input id="kioskUrl" placeholder="https://example.com (URL to open)" />
+                <label style="display:flex;align-items:center;gap:.5rem;">
+                  <input type="checkbox" id="kioskFullscreen" checked />
+                  Fullscreen
+                </label>
+                <div class="row-gap">
+                  <button id="btnOpenKiosk">Open URL</button>
+                  <button id="btnCloseKiosk" class="secondary">Close Kiosk</button>
+                </div>
+              </div>
+            </article>
           </div>
 
           <!-- Events -->
